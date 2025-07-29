@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: products-api
+  datasource:
+    url: jdbc:postgresql://products-db:5432/products_db
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health
+    health:
+      liveness:
+        enabled: true
+      readiness:
+        enabled: true
+
+logging: # <-- NUEVA SECCIÓN PARA CONTROLAR LOS LOGS
+  level:
+    root: INFO # Nivel de log por defecto para toda la aplicación (INFO, WARN, ERROR)
+    org.hibernate: WARN # Reduce los logs de Hibernate a advertencias y errores
+    org.springframework.data.jpa: WARN # Reduce los logs de Spring Data JPA
+    org.springframework.jdbc: WARN # Reduce los logs de JDBC
+    com.zaxxer.hikari: WARN # Reduce los logs del pool de conexiones Hikari
+
+server:
+  port: 8080

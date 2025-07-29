@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  products-db:
+    image: postgres:16-alpine
+    container_name: products-postgres-container
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - products_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d products_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+
+  product-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: product-api
+    ports:
+      - "8080:8080"
+    command: >
+      java -cp app.jar com.mango.App
+    depends_on:
+      products-db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://products-db:5432/products_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      MANAGEMENT_SERVER_PORT: 8080
+      MANAGEMENT_ENDPOINTS_WEB_BASE_PATH: /actuator
+
+  benchmark:
+    build:
+      context: .
+      dockerfile: Dockerfile.benchmark
+    container_name: product-benchmark
+    depends_on:
+      - product-api
+    command: sh -c "chmod +x /app/benchmark.sh && /app/benchmark.sh"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+volumes:
+  products_data:
